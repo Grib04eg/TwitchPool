@@ -7,21 +7,27 @@ const TwitchStrategy = require('passport-twitch-new').Strategy;
 const helmet = require('helmet');
 const morgan = require('morgan');
 const http = require('http');
+const https = require('https');
+const fs = require('fs');
 const { Server } = require('socket.io');
 const Database = require('better-sqlite3');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+let server; // will be assigned after SSL detection
+let io;     // will be attached to the chosen server
 
 // --- Config
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000; // HTTP port when SSL off, or redirect port when SSL on
+const HTTPS_PORT = process.env.HTTPS_PORT || 443;
 const SESSION_SECRET = process.env.SESSION_SECRET || 'change_me_in_.env';
 const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID || '';
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET || '';
 const AUTH_READY = Boolean(TWITCH_CLIENT_ID && TWITCH_CLIENT_SECRET);
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+const SSL_KEY_PATH = process.env.SSL_KEY_PATH || '';
+const SSL_CERT_PATH = process.env.SSL_CERT_PATH || '';
+const SSL_CA_PATH = process.env.SSL_CA_PATH || '';
 
 // --- DB setup
 const db = new Database(path.join(__dirname, '..', 'data.db'));
@@ -308,8 +314,44 @@ async function fetchAndBroadcastPolls() {
 
 setInterval(fetchAndBroadcastPolls, 4000);
 
-server.listen(PORT, () => {
-  console.log(`Server listening on ${BASE_URL}`);
-});
+// --- HTTPS enablement (Certbot)
+function fileExists(p) {
+  try { return p && fs.existsSync(p); } catch { return false; }
+}
+
+const SSL_ENABLED = fileExists(SSL_KEY_PATH) && fileExists(SSL_CERT_PATH);
+
+if (SSL_ENABLED) {
+  const httpsOptions = {
+    key: fs.readFileSync(SSL_KEY_PATH),
+    cert: fs.readFileSync(SSL_CERT_PATH),
+    ca: fileExists(SSL_CA_PATH) ? fs.readFileSync(SSL_CA_PATH) : undefined,
+  };
+  server = https.createServer(httpsOptions, app);
+  io = new Server(server);
+
+  // Start HTTPS
+  server.listen(HTTPS_PORT, () => {
+    const url = BASE_URL.startsWith('http') ? BASE_URL.replace('http://', 'https://') : `https://localhost:${HTTPS_PORT}`;
+    console.log(`HTTPS server listening on ${url}`);
+  });
+
+  // Optional HTTP -> HTTPS redirect
+  const redirectApp = express();
+  redirectApp.use((req, res) => {
+    const host = req.headers.host ? req.headers.host.split(':')[0] : 'localhost';
+    return res.redirect(301, `https://${host}${req.url}`);
+  });
+  http.createServer(redirectApp).listen(PORT, () => {
+    console.log(`HTTP redirect listening on http://localhost:${PORT} -> HTTPS`);
+  });
+} else {
+  // HTTP only
+  server = http.createServer(app);
+  io = new Server(server);
+  server.listen(PORT, () => {
+    console.log(`Server listening on ${BASE_URL}`);
+  });
+}
 
 

@@ -24,6 +24,7 @@
       <a class="btn" href="<%= loginUrl %>">Войти через Twitch</a>
     <% } else { %>
       <p style="color:#f99">Задайте переменные окружения TWITCH_CLIENT_ID и TWITCH_CLIENT_SECRET в файле .env</p>
+      <p style="opacity:.8">Для продакшна используйте HTTPS (`SSL_KEY_PATH`, `SSL_CERT_PATH`). Домен: twitchpool.gribah.ru</p>
     <% } %>
   </div>
 </body>
