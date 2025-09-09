@@ -55,6 +55,14 @@ CREATE TABLE IF NOT EXISTS polls (
   created_at INTEGER,
   updated_at INTEGER
 );
+
+CREATE TABLE IF NOT EXISTS templates (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
+  title TEXT,
+  choices_json TEXT,
+  created_at INTEGER
+);
 `);
 
 // --- Views and static
@@ -256,9 +264,20 @@ async function twitchApiRequest(user, method, url, { params, data } = {}) {
 }
 app.post('/dashboard/polls', ensureAuth, async (req, res) => {
   try {
-    const { pollId } = req.body;
-    const poll = db.prepare('SELECT * FROM polls WHERE id = ? AND user_id = ?').get(pollId, req.user.id);
-    if (!poll) return res.status(404).json({ error: 'Poll not found' });
+    // Accept either existing pollId, or raw options to auto-save a draft first
+    let { pollId, options, title, durationSec } = req.body;
+    let poll;
+    if (pollId) {
+      poll = db.prepare('SELECT * FROM polls WHERE id = ? AND user_id = ?').get(pollId, req.user.id);
+    } else if (Array.isArray(options) && options.length >= 2) {
+      const id = uuidv4();
+      const now = Date.now();
+      db.prepare('INSERT INTO polls (id, user_id, twitch_poll_id, title, choices_json, duration_sec, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?, ?, ?)')
+        .run(id, req.user.id, null, title || 'Poll', JSON.stringify(options), Number(durationSec) || 60, 'draft', now, now);
+      pollId = id;
+      poll = db.prepare('SELECT * FROM polls WHERE id = ? AND user_id = ?').get(pollId, req.user.id);
+    }
+    if (!poll) return res.status(404).json({ error: 'Poll not found or options missing' });
 
     // Get broadcaster id from user twitch id
     const broadcasterId = req.user.twitch_id;
@@ -282,6 +301,28 @@ app.post('/dashboard/polls', ensureAuth, async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: 'Failed to create poll', details: e.response?.data || e.message });
   }
+});
+
+// Templates API
+app.get('/api/templates', ensureAuth, (req, res) => {
+  const rows = db.prepare('SELECT id, title, choices_json, created_at FROM templates WHERE user_id = ? ORDER BY created_at DESC LIMIT 50').all(req.user.id);
+  res.json({ templates: rows.map(r => ({ id: r.id, title: r.title, options: JSON.parse(r.choices_json), created_at: r.created_at })) });
+});
+
+app.post('/api/templates', ensureAuth, (req, res) => {
+  const { title, options } = req.body;
+  if (!Array.isArray(options) || options.length < 2) return res.status(400).json({ error: 'Need at least 2 options' });
+  const id = uuidv4();
+  const now = Date.now();
+  db.prepare('INSERT INTO templates (id, user_id, title, choices_json, created_at) VALUES (?,?,?,?,?)')
+    .run(id, req.user.id, title || 'Template', JSON.stringify(options), now);
+  res.json({ ok: true, id });
+});
+
+app.delete('/api/templates/:id', ensureAuth, (req, res) => {
+  const id = req.params.id;
+  db.prepare('DELETE FROM templates WHERE id = ? AND user_id = ?').run(id, req.user.id);
+  res.json({ ok: true });
 });
 
 // Fetch current poll live details (for dashboard)

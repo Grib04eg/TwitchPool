@@ -38,7 +38,7 @@
 		ctx.fillStyle = '#fff';
 		// адаптивный размер шрифта относительно меньшей стороны
 		const minSide = Math.min(chartInstance.width, chartInstance.height);
-		const base = Math.max(16, Math.round(minSide * 0.05)); // 5% от меньшей стороны
+		const base = Math.max(16, Math.round(minSide * 0.10)); // 10% от меньшей стороны
 		ctx.font = `bold ${base}px Inter, Arial, sans-serif`;
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';

@@ -47,9 +47,14 @@
       <div id="options"></div>
       <div style="margin-top:8px; display:flex; gap:8px;">
         <button class="btn" id="btnAddOption">Добавить вариант</button>
-        <button class="btn" id="btnSaveOptions">Сохранить список</button>
+        <button class="btn" id="btnSaveTemplate">Сохранить как шаблон</button>
         <button class="btn" id="btnCreatePoll">Создать опрос на Twitch</button>
       </div>
+    </div>
+
+    <div class="card">
+      <h3>Шаблоны</h3>
+      <div id="templates" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
     </div>
 
     <% if (latestPoll) { %>
