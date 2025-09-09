@@ -281,12 +281,15 @@ app.get('/widget/:token', (req, res) => {
 });
 
 // Widget data stream via Socket.IO namespaces per widget token
-io.on('connection', (socket) => {
-  // Client should emit 'join' with widget token
-  socket.on('join', (token) => {
-    socket.join(`widget:${token}`);
+function attachIoHandlers() {
+  if (!io) return;
+  io.on('connection', (socket) => {
+    // Client should emit 'join' with widget token
+    socket.on('join', (token) => {
+      socket.join(`widget:${token}`);
+    });
   });
-});
+}
 
 async function fetchAndBroadcastPolls() {
   try {
@@ -329,6 +332,7 @@ if (SSL_ENABLED) {
   };
   server = https.createServer(httpsOptions, app);
   io = new Server(server);
+  attachIoHandlers();
 
   // Start HTTPS
   server.listen(HTTPS_PORT, () => {
@@ -349,6 +353,7 @@ if (SSL_ENABLED) {
   // HTTP only
   server = http.createServer(app);
   io = new Server(server);
+  attachIoHandlers();
   server.listen(PORT, () => {
     console.log(`Server listening on ${BASE_URL}`);
   });
