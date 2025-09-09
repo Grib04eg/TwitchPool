@@ -64,6 +64,18 @@ app.use('/static', express.static(path.join(__dirname, '..', 'public')));
 
 // --- Security & logging
 app.use(helmet());
+app.use(helmet.contentSecurityPolicy({
+  useDefaults: true,
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+    styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+    fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+    imgSrc: ["'self'", 'data:'],
+    connectSrc: ["'self'", 'wss:'],
+    frameAncestors: ["'self'"],
+  },
+}));
 app.use(morgan('dev'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
