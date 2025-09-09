@@ -13,15 +13,18 @@
 	});
 	function randomColor() { return `hsl(${Math.floor(Math.random()*360)}, 70%, 55%)`; }
 	let hideTimer = null;
+	const canvasEl = document.getElementById('canvas');
 
 	function drawCenterLabels(chartInstance) {
 		const { ctx } = chartInstance;
 		const meta = chartInstance.getDatasetMeta(0);
 		ctx.save();
 		ctx.fillStyle = '#fff';
-		ctx.font = '12px Inter, Arial';
+		ctx.font = 'bold 24px Inter, Arial, sans-serif';
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
+		ctx.lineWidth = 4;
+		ctx.strokeStyle = 'rgba(0,0,0,0.85)';
 		meta.data.forEach((arc, idx) => {
 			const value = chartInstance.data.datasets[0].data[idx] || 0;
 			if (!value) return; // показывать подпись только если есть голоса
@@ -31,6 +34,7 @@
 			const r = (pos.innerRadius + pos.outerRadius) / 2;
 			const x = pos.x + Math.cos(angle) * r;
 			const y = pos.y + Math.sin(angle) * r;
+			ctx.strokeText(label, x, y);
 			ctx.fillText(label, x, y);
 		});
 		ctx.restore();
@@ -50,14 +54,16 @@
 		chart.data.datasets[0].backgroundColor = colors;
 		chart.update();
 
+		// visibility control
 		if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
 		const status = (poll.status || '').toLowerCase();
-		if (status === 'terminated' || status === 'completed' || status === 'ended') {
+		const isEnded = status === 'terminated' || status === 'completed' || status === 'ended' || status === 'archived';
+		if (isEnded) {
 			hideTimer = setTimeout(() => {
-				chart.data.labels = [];
-				chart.data.datasets[0].data = [];
-				chart.update();
+				if (canvasEl) canvasEl.style.display = 'none';
 			}, 10000);
+		} else {
+			if (canvasEl) canvasEl.style.display = '';
 		}
 	});
 })();
