@@ -24,15 +24,25 @@ async function endNow() {
 	try {
 		const r = await fetch('/api/end-poll', { method: 'POST' });
 		if (!r.ok) {
-			alert('Не удалось завершить опрос');
+			if (typeof toast === 'function') toast('Не удалось завершить опрос', 'error', 3500);
 			return;
 		}
 		await fetchCurrent();
-		alert('Опрос завершён');
-	} catch (_) { alert('Ошибка при завершении опроса'); }
+		if (typeof toast === 'function') toast('Опрос завершён');
+	} catch (_) { if (typeof toast === 'function') toast('Ошибка при завершении опроса', 'error', 3500); }
+}
+
+function ensureToastContainer() {
+	if (!document.getElementById('toasts')) {
+		const box = document.createElement('div');
+		box.id = 'toasts';
+		box.className = 'toasts';
+		document.body.appendChild(box);
+	}
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+	ensureToastContainer();
 	const btn = document.getElementById('btnEndPoll');
 	if (btn) btn.addEventListener('click', endNow);
 	fetchCurrent();

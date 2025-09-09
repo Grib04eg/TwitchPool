@@ -112,23 +112,25 @@
 				winnerOverlay.style.display = 'flex';
 				winnerText && (winnerText.style.animation = 'none', winnerText.offsetHeight, winnerText.style.animation = 'popIn .6s ease both');
 			}
-			// затемнить только область кольца
+			// затемнить только область круга/кольца (без углов)
 			if (shadeEl) {
 				const sctx = shadeEl.getContext('2d');
 				sctx.clearRect(0,0,shadeEl.width,shadeEl.height);
-				sctx.fillStyle = 'rgba(0,0,0,0.55)';
-				sctx.fillRect(0,0,shadeEl.width,shadeEl.height);
-				// вырезать круг по радиусу диаграммы
 				const meta = chart.getDatasetMeta(0);
 				if (meta && meta.data && meta.data[0]) {
 					const a0 = meta.data[0];
 					const p = a0.getProps(['x','y','outerRadius','innerRadius'], true);
-					sctx.globalCompositeOperation = 'destination-out';
+					sctx.fillStyle = 'rgba(0,0,0,0.55)';
 					sctx.beginPath();
-					sctx.arc(p.x, p.y, p.outerRadius, 0, Math.PI*2);
-					sctx.arc(p.x, p.y, Math.max(p.innerRadius, 0), 0, Math.PI*2, true);
-					sctx.fill();
-					sctx.globalCompositeOperation = 'source-over';
+					// внешний круг по радиусу диаграммы
+					sctx.arc(p.x, p.y, p.outerRadius, 0, Math.PI * 2);
+					// если есть внутренний радиус (donut), вычитаем его, чтобы остался только «обод»
+					if (p.innerRadius && p.innerRadius > 0) {
+						sctx.moveTo(p.x + p.innerRadius, p.y);
+						sctx.arc(p.x, p.y, p.innerRadius, 0, Math.PI * 2, true);
+					}
+					// рисуем только эту форму (evenodd, чтобы вычитание сработало)
+					try { sctx.fill('evenodd'); } catch (_) { sctx.fill(); }
 				}
 				shadeEl.style.display = 'block';
 			}
