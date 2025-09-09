@@ -284,6 +284,40 @@ app.post('/dashboard/polls', ensureAuth, async (req, res) => {
   }
 });
 
+// Fetch current poll live details (for dashboard)
+app.get('/api/current-poll', ensureAuth, async (req, res) => {
+  try {
+    const latest = db.prepare('SELECT * FROM polls WHERE user_id = ? AND twitch_poll_id IS NOT NULL ORDER BY created_at DESC LIMIT 1').get(req.user.id);
+    if (!latest) return res.json({ poll: null });
+    const resp = await twitchApiRequest(req.user, 'get', 'https://api.twitch.tv/helix/polls', {
+      params: { broadcaster_id: req.user.twitch_id, id: latest.twitch_poll_id }
+    });
+    const poll = resp.data && resp.data.data && resp.data.data[0];
+    return res.json({ poll: poll || null });
+  } catch (e) {
+    return res.status(500).json({ error: 'Failed to get current poll', details: e.response?.data || e.message });
+  }
+});
+
+// End current poll (terminate early)
+app.post('/api/end-poll', ensureAuth, async (req, res) => {
+  try {
+    const latest = db.prepare('SELECT * FROM polls WHERE user_id = ? AND twitch_poll_id IS NOT NULL ORDER BY created_at DESC LIMIT 1').get(req.user.id);
+    if (!latest) return res.status(404).json({ error: 'No active poll' });
+    const resp = await twitchApiRequest(req.user, 'patch', 'https://api.twitch.tv/helix/polls', {
+      data: { broadcaster_id: req.user.twitch_id, id: latest.twitch_poll_id, status: 'TERMINATED' }
+    });
+    const poll = resp.data && resp.data.data && resp.data.data[0];
+    if (poll) {
+      db.prepare('UPDATE polls SET status = ?, updated_at = ? WHERE id = ?').run(poll.status || 'terminated', Date.now(), latest.id);
+      io && io.to(`widget:${req.user.widget_token}`).emit('poll:update', poll);
+    }
+    return res.json({ ok: true, poll: poll || null });
+  } catch (e) {
+    return res.status(500).json({ error: 'Failed to end poll', details: e.response?.data || e.message });
+  }
+});
+
 // Widget page
 app.get('/widget/:token', (req, res) => {
   const token = req.params.token;
