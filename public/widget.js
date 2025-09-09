@@ -93,7 +93,9 @@
 			const max = Math.max(...counts);
 			const winners = poll.choices.filter(c => (c.votes || 0) === max && max > 0).map(c => c.title);
 			if (winnerText) {
-				winnerText.textContent = winners.length > 0 ? `Победитель${winners.length>1?'и':''}: ${winners.join(' • ')}` : 'Нет голосов';
+				const prefix = winners.length > 1 ? 'Победители' : 'Победитель';
+				const names = winners.length > 0 ? winners.join(' • ') : 'Нет голосов';
+				winnerText.innerHTML = `${prefix}:<br>${names}`;
 			}
 			if (winnerOverlay) {
 				winnerOverlay.style.display = 'flex';

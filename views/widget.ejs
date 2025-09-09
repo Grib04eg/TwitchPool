@@ -22,11 +22,15 @@
       color: #fff;
       font-family: Inter, system-ui, Arial;
       pointer-events: none;
+      background: rgba(0,0,0,0.55);
     }
     #winnerText {
       font-weight: 800;
       text-shadow: 0 2px 6px rgba(0,0,0,.7), 0 0 18px rgba(0,0,0,.6);
       animation: popIn .6s ease both;
+      width: 100%;
+      line-height: 1.15;
+      font-size: clamp(28px, 8vw, 120px);
     }
     @keyframes popIn {
       0% { opacity: 0; transform: scale(.7); }
