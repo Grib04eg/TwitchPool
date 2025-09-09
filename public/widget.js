@@ -7,6 +7,8 @@
 	// Изначально скрыт, пока не получим активный опрос
 	if (canvasEl) canvasEl.style.display = 'none';
 	const ctx = canvasEl.getContext('2d');
+	const winnerOverlay = document.getElementById('winnerOverlay');
+	const winnerText = document.getElementById('winnerText');
 
 	function resizeCanvas() {
 		const parent = canvasEl.parentElement || document.body;
@@ -79,20 +81,34 @@
 			chart.data.datasets[0].backgroundColor = colors;
 			chart.update();
 			if (canvasEl) canvasEl.style.display = '';
+			if (winnerOverlay) winnerOverlay.style.display = 'none';
 			wasActive = true;
 			return;
 		}
 
 		// not active
 		if (wasActive && isEnded) {
+			// Подсчёт победителей
+			const counts = poll.choices.map(c => c.votes || 0);
+			const max = Math.max(...counts);
+			const winners = poll.choices.filter(c => (c.votes || 0) === max && max > 0).map(c => c.title);
+			if (winnerText) {
+				winnerText.textContent = winners.length > 0 ? `Победитель${winners.length>1?'и':''}: ${winners.join(' • ')}` : 'Нет голосов';
+			}
+			if (winnerOverlay) {
+				winnerOverlay.style.display = 'flex';
+				winnerText && (winnerText.style.animation = 'none', winnerText.offsetHeight, winnerText.style.animation = 'popIn .6s ease both');
+			}
 			// показать ещё 10 секунд, затем скрыть
 			hideTimer = setTimeout(() => {
 				if (canvasEl) canvasEl.style.display = 'none';
+				if (winnerOverlay) winnerOverlay.style.display = 'none';
 			}, 10000);
 			wasActive = false;
 		} else {
 			// был не активен при заходе — ничего не показываем
 			if (canvasEl) canvasEl.style.display = 'none';
+			if (winnerOverlay) winnerOverlay.style.display = 'none';
 			chart.data.labels = [];
 			chart.data.datasets[0].data = [];
 			chart.update();
