@@ -33,4 +33,23 @@ function addOption() {
 	container.appendChild(input);
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+	const btnCopy = document.getElementById('btnCopy');
+	if (btnCopy) btnCopy.addEventListener('click', () => {
+		navigator.clipboard.writeText(document.getElementById('widgetLink').value);
+	});
+
+	const btnRegen = document.getElementById('btnRegen');
+	if (btnRegen) btnRegen.addEventListener('click', () => { regenLink(); });
+
+	const btnAddOption = document.getElementById('btnAddOption');
+	if (btnAddOption) btnAddOption.addEventListener('click', () => { addOption(); });
+
+	const btnSaveOptions = document.getElementById('btnSaveOptions');
+	if (btnSaveOptions) btnSaveOptions.addEventListener('click', () => { saveOptions(); });
+
+	const btnCreatePoll = document.getElementById('btnCreatePoll');
+	if (btnCreatePoll) btnCreatePoll.addEventListener('click', () => { createPoll(); });
+});
+
 

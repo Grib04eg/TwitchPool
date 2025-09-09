@@ -30,10 +30,10 @@
       <h3>Виджет</h3>
       <div class="row">
         <input id="widgetLink" type="text" readonly value="<%= widgetUrl %>" />
-        <button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('widgetLink').value)">Копировать</button>
+        <button class="btn" id="btnCopy">Копировать</button>
       </div>
       <div style="margin-top:8px;">
-        <button class="btn" onclick="regenLink()">Перегенерировать ссылку</button>
+        <button class="btn" id="btnRegen">Перегенерировать ссылку</button>
       </div>
     </div>
 
@@ -46,9 +46,9 @@
       <label>Варианты</label>
       <div id="options"></div>
       <div style="margin-top:8px; display:flex; gap:8px;">
-        <button class="btn" onclick="addOption()">Добавить вариант</button>
-        <button class="btn" onclick="saveOptions()">Сохранить список</button>
-        <button class="btn" onclick="createPoll()">Создать опрос на Twitch</button>
+        <button class="btn" id="btnAddOption">Добавить вариант</button>
+        <button class="btn" id="btnSaveOptions">Сохранить список</button>
+        <button class="btn" id="btnCreatePoll">Создать опрос на Twitch</button>
       </div>
     </div>
 
