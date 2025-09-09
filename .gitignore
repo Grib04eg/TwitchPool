@@ -1,0 +1,45 @@
+# dependencies
+/node_modules
+
+# env
+.env
+.env.local
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs
+*.log
+
+# runtime
+/tmp
+/.cache
+/.npm
+/.pnpm-store
+
+# builds
+/dist
+/build
+/.next
+
+# editor
+.vscode/
+.idea/
+.DS_Store
+
+# sqlite
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+/data.db
+
+# coverage
+/coverage
+
+# misc
+*.pid
+*.seed
+*.tgz
