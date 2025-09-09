@@ -4,6 +4,19 @@ async function regenLink() {
 	document.getElementById('widgetLink').value = data.widgetUrl;
 }
 
+function toast(message, type = 'success', timeout = 2500) {
+	const box = document.getElementById('toasts');
+	if (!box) return;
+	const el = document.createElement('div');
+	el.className = `toast ${type}`;
+	el.textContent = message;
+	box.appendChild(el);
+	setTimeout(() => {
+		el.style.animation = 'toast-out .2s ease forwards';
+		setTimeout(() => el.remove(), 200);
+	}, timeout);
+}
+
 async function saveOptionsDraft() {
 	const title = document.getElementById('title').value;
 	const durationSec = document.getElementById('duration').value;
@@ -60,7 +73,7 @@ async function saveTemplate() {
 	const title = document.getElementById('title').value || 'Template';
 	const durationSec = document.getElementById('duration').value;
 	const options = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value).filter(Boolean);
-	if (options.length < 2) { alert('Нужно минимум 2 варианта'); return; }
+	if (options.length < 2) { toast('Нужно минимум 2 варианта', 'error', 3000); return; }
 	const resp = await fetch('/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, options, durationSec }) });
 	const data = await resp.json();
 	if (data.ok) { loadTemplates(); toast('Шаблон сохранён'); } else { toast('Ошибка сохранения шаблона', 'error', 4000); }
