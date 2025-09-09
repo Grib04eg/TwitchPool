@@ -3,24 +3,43 @@
 	const token = document.currentScript.getAttribute('data-token');
 	const socket = io();
 	socket.emit('join', token);
-	const ctx = document.getElementById('canvas').getContext('2d');
+	const canvasEl = document.getElementById('canvas');
+	// Изначально скрыт, пока не получим активный опрос
+	if (canvasEl) canvasEl.style.display = 'none';
+	const ctx = canvasEl.getContext('2d');
+
+	function resizeCanvas() {
+		const parent = canvasEl.parentElement || document.body;
+		const w = parent.clientWidth || window.innerWidth;
+		const h = parent.clientHeight || window.innerHeight;
+		canvasEl.width = w; // controls render resolution
+		canvasEl.height = h;
+		chart && chart.resize();
+	}
 	const chart = new Chart(ctx, {
 		type: 'pie',
 		data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
 		options: {
 			plugins: { legend: { display: false } },
+			maintainAspectRatio: false,
 		}
 	});
+
+	resizeCanvas();
+	window.addEventListener('resize', resizeCanvas);
 	function randomColor() { return `hsl(${Math.floor(Math.random()*360)}, 70%, 55%)`; }
 	let hideTimer = null;
-	const canvasEl = document.getElementById('canvas');
+	let wasActive = false;
 
 	function drawCenterLabels(chartInstance) {
 		const { ctx } = chartInstance;
 		const meta = chartInstance.getDatasetMeta(0);
 		ctx.save();
 		ctx.fillStyle = '#fff';
-		ctx.font = 'bold 48px Inter, Arial, sans-serif';
+		// адаптивный размер шрифта относительно меньшей стороны
+		const minSide = Math.min(chartInstance.width, chartInstance.height);
+		const base = Math.max(16, Math.round(minSide * 0.05)); // 5% от меньшей стороны
+		ctx.font = `bold ${base}px Inter, Arial, sans-serif`;
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
 		ctx.lineWidth = 4;
@@ -46,24 +65,37 @@
 	});
 
 	socket.on('poll:update', (poll) => {
-		const labels = poll.choices.map(c => c.title);
-		const counts = poll.choices.map(c => c.votes);
-		const colors = labels.map((_, i) => chart.data.datasets[0].backgroundColor[i] || randomColor());
-		chart.data.labels = labels;
-		chart.data.datasets[0].data = counts;
-		chart.data.datasets[0].backgroundColor = colors;
-		chart.update();
-
-		// visibility control
 		if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
 		const status = (poll.status || '').toLowerCase();
+		const isActive = status === 'active';
 		const isEnded = status === 'terminated' || status === 'completed' || status === 'ended' || status === 'archived';
-		if (isEnded) {
+
+		if (isActive) {
+			const labels = poll.choices.map(c => c.title);
+			const counts = poll.choices.map(c => c.votes);
+			const colors = labels.map((_, i) => chart.data.datasets[0].backgroundColor[i] || randomColor());
+			chart.data.labels = labels;
+			chart.data.datasets[0].data = counts;
+			chart.data.datasets[0].backgroundColor = colors;
+			chart.update();
+			if (canvasEl) canvasEl.style.display = '';
+			wasActive = true;
+			return;
+		}
+
+		// not active
+		if (wasActive && isEnded) {
+			// показать ещё 10 секунд, затем скрыть
 			hideTimer = setTimeout(() => {
 				if (canvasEl) canvasEl.style.display = 'none';
 			}, 10000);
+			wasActive = false;
 		} else {
-			if (canvasEl) canvasEl.style.display = '';
+			// был не активен при заходе — ничего не показываем
+			if (canvasEl) canvasEl.style.display = 'none';
+			chart.data.labels = [];
+			chart.data.datasets[0].data = [];
+			chart.update();
 		}
 	});
 })();
