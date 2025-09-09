@@ -58,9 +58,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function saveTemplate() {
 	const title = document.getElementById('title').value || 'Template';
+	const durationSec = document.getElementById('duration').value;
 	const options = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value).filter(Boolean);
 	if (options.length < 2) { alert('Нужно минимум 2 варианта'); return; }
-	const resp = await fetch('/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, options }) });
+	const resp = await fetch('/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, options, durationSec }) });
 	const data = await resp.json();
 	if (data.ok) { loadTemplates(); alert('Шаблон сохранён'); } else { alert('Ошибка сохранения шаблона'); }
 }
@@ -104,6 +105,7 @@ async function loadTemplates() {
 
 function applyTemplate(t) {
 	document.getElementById('title').value = t.title || '';
+	if (t.durationSec) document.getElementById('duration').value = t.durationSec;
 	const container = document.getElementById('options');
 	container.innerHTML = '';
 	(t.options || []).forEach(opt => {

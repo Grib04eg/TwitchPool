@@ -4,6 +4,7 @@
 	const socket = io();
 	socket.emit('join', token);
 	const canvasEl = document.getElementById('canvas');
+	const shadeEl = document.getElementById('shade');
 	// Изначально скрыт, пока не получим активный опрос
 	if (canvasEl) canvasEl.style.display = 'none';
 	const ctx = canvasEl.getContext('2d');
@@ -16,6 +17,7 @@
 		const h = parent.clientHeight || window.innerHeight;
 		canvasEl.width = w; // controls render resolution
 		canvasEl.height = h;
+		if (shadeEl) { shadeEl.width = w; shadeEl.height = h; shadeEl.style.width = '100%'; shadeEl.style.height = '100%'; shadeEl.style.position = 'absolute'; shadeEl.style.left = 0; shadeEl.style.top = 0; }
 		chart && chart.resize();
 	}
 	const chart = new Chart(ctx, {
@@ -32,6 +34,7 @@
 	function randomColor() { return `hsl(${Math.floor(Math.random()*360)}, 70%, 55%)`; }
 	let hideTimer = null;
 	let wasActive = false;
+	let lastPollId = null;
 
 	function drawCenterLabels(chartInstance) {
 		const { ctx } = chartInstance;
@@ -75,7 +78,15 @@
 		if (isActive) {
 			const labels = poll.choices.map(c => c.title);
 			const counts = poll.choices.map(c => c.votes);
-			const colors = labels.map((_, i) => chart.data.datasets[0].backgroundColor[i] || randomColor());
+			let colors = chart.data.datasets[0].backgroundColor || [];
+			if (poll.id && poll.id !== lastPollId) {
+				// новый опрос — сгенерировать новую палитру
+				colors = labels.map(() => randomColor());
+				lastPollId = poll.id;
+			} else {
+				// тот же опрос — дополнить недостающие цвета
+				colors = labels.map((_, i) => colors[i] || randomColor());
+			}
 			chart.data.labels = labels;
 			chart.data.datasets[0].data = counts;
 			chart.data.datasets[0].backgroundColor = colors;
@@ -101,16 +112,39 @@
 				winnerOverlay.style.display = 'flex';
 				winnerText && (winnerText.style.animation = 'none', winnerText.offsetHeight, winnerText.style.animation = 'popIn .6s ease both');
 			}
+			// затемнить только область кольца
+			if (shadeEl) {
+				const sctx = shadeEl.getContext('2d');
+				sctx.clearRect(0,0,shadeEl.width,shadeEl.height);
+				sctx.fillStyle = 'rgba(0,0,0,0.55)';
+				sctx.fillRect(0,0,shadeEl.width,shadeEl.height);
+				// вырезать круг по радиусу диаграммы
+				const meta = chart.getDatasetMeta(0);
+				if (meta && meta.data && meta.data[0]) {
+					const a0 = meta.data[0];
+					const p = a0.getProps(['x','y','outerRadius','innerRadius'], true);
+					sctx.globalCompositeOperation = 'destination-out';
+					sctx.beginPath();
+					sctx.arc(p.x, p.y, p.outerRadius, 0, Math.PI*2);
+					sctx.arc(p.x, p.y, Math.max(p.innerRadius, 0), 0, Math.PI*2, true);
+					sctx.fill();
+					sctx.globalCompositeOperation = 'source-over';
+				}
+				shadeEl.style.display = 'block';
+			}
+
 			// показать ещё 10 секунд, затем скрыть
 			hideTimer = setTimeout(() => {
 				if (canvasEl) canvasEl.style.display = 'none';
 				if (winnerOverlay) winnerOverlay.style.display = 'none';
+				if (shadeEl) shadeEl.style.display = 'none';
 			}, 10000);
 			wasActive = false;
 		} else {
 			// был не активен при заходе — ничего не показываем
 			if (canvasEl) canvasEl.style.display = 'none';
 			if (winnerOverlay) winnerOverlay.style.display = 'none';
+			if (shadeEl) shadeEl.style.display = 'none';
 			chart.data.labels = [];
 			chart.data.datasets[0].data = [];
 			chart.update();

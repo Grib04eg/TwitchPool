@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS templates (
   user_id TEXT,
   title TEXT,
   choices_json TEXT,
+  duration_sec INTEGER,
   created_at INTEGER
 );
 `);
@@ -305,17 +306,17 @@ app.post('/dashboard/polls', ensureAuth, async (req, res) => {
 
 // Templates API
 app.get('/api/templates', ensureAuth, (req, res) => {
-  const rows = db.prepare('SELECT id, title, choices_json, created_at FROM templates WHERE user_id = ? ORDER BY created_at DESC LIMIT 50').all(req.user.id);
-  res.json({ templates: rows.map(r => ({ id: r.id, title: r.title, options: JSON.parse(r.choices_json), created_at: r.created_at })) });
+  const rows = db.prepare('SELECT id, title, choices_json, duration_sec, created_at FROM templates WHERE user_id = ? ORDER BY created_at DESC LIMIT 50').all(req.user.id);
+  res.json({ templates: rows.map(r => ({ id: r.id, title: r.title, options: JSON.parse(r.choices_json), durationSec: r.duration_sec, created_at: r.created_at })) });
 });
 
 app.post('/api/templates', ensureAuth, (req, res) => {
-  const { title, options } = req.body;
+  const { title, options, durationSec } = req.body;
   if (!Array.isArray(options) || options.length < 2) return res.status(400).json({ error: 'Need at least 2 options' });
   const id = uuidv4();
   const now = Date.now();
-  db.prepare('INSERT INTO templates (id, user_id, title, choices_json, created_at) VALUES (?,?,?,?,?)')
-    .run(id, req.user.id, title || 'Template', JSON.stringify(options), now);
+  db.prepare('INSERT INTO templates (id, user_id, title, choices_json, duration_sec, created_at) VALUES (?,?,?,?,?,?)')
+    .run(id, req.user.id, title || 'Template', JSON.stringify(options), Number(durationSec) || 60, now);
   res.json({ ok: true, id });
 });
 

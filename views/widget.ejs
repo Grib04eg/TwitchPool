@@ -22,7 +22,7 @@
       color: #fff;
       font-family: Inter, system-ui, Arial;
       pointer-events: none;
-      background: rgba(0,0,0,0.55);
+      background: transparent; /* затемнение будет рисоваться на втором canvas */
     }
     #winnerText {
       font-weight: 800;
@@ -42,6 +42,7 @@
 <body>
   <div class="wrap">
     <canvas id="canvas"></canvas>
+    <canvas id="shade"></canvas>
     <div id="winnerOverlay"><div id="winnerText"></div></div>
   </div>
   <script src="/static/widget.js" data-token="<%= token %>"></script>
