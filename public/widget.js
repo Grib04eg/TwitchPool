@@ -20,7 +20,7 @@
 		const meta = chartInstance.getDatasetMeta(0);
 		ctx.save();
 		ctx.fillStyle = '#fff';
-		ctx.font = 'bold 24px Inter, Arial, sans-serif';
+		ctx.font = 'bold 48px Inter, Arial, sans-serif';
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
 		ctx.lineWidth = 4;
