@@ -66,6 +66,9 @@ CREATE TABLE IF NOT EXISTS templates (
 );
 `);
 
+// --- Lightweight migrations for existing installs
+try { db.prepare('ALTER TABLE templates ADD COLUMN duration_sec INTEGER').run(); } catch (_) {}
+
 // --- Views and static
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '..', 'views'));
@@ -307,7 +310,7 @@ app.post('/dashboard/polls', ensureAuth, async (req, res) => {
 // Templates API
 app.get('/api/templates', ensureAuth, (req, res) => {
   const rows = db.prepare('SELECT id, title, choices_json, duration_sec, created_at FROM templates WHERE user_id = ? ORDER BY created_at DESC LIMIT 50').all(req.user.id);
-  res.json({ templates: rows.map(r => ({ id: r.id, title: r.title, options: JSON.parse(r.choices_json), durationSec: r.duration_sec, created_at: r.created_at })) });
+  res.json({ templates: rows.map(r => ({ id: r.id, title: r.title, options: JSON.parse(r.choices_json), durationSec: r.duration_sec || 60, created_at: r.created_at })) });
 });
 
 app.post('/api/templates', ensureAuth, (req, res) => {
