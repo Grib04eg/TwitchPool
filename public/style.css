@@ -2,4 +2,12 @@
 * { box-sizing: border-box; }
 body { font-family: Inter, system-ui, Arial; }
 
+/* toast notifications */
+.toasts { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 9999; }
+.toast { background: #1f1f23; color: #fff; padding: 10px 14px; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.4); border: 1px solid #2b2b2f; opacity: 0; transform: translateY(8px); animation: toast-in .2s ease forwards; }
+.toast.success { border-color: #198754; }
+.toast.error { border-color: #b33; }
+@keyframes toast-in { to { opacity: 1; transform: translateY(0); } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(8px); } }
+
 

@@ -24,7 +24,7 @@ async function createPoll() {
 	const body = window.currentPollId ? { pollId: window.currentPollId } : { title, durationSec, options };
 	const resp = await fetch('/dashboard/polls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 	const data = await resp.json();
-	if (data.ok) alert('Опрос создан на Twitch'); else alert('Ошибка: ' + (data.details || data.error));
+	if (data.ok) toast('Опрос создан на Twitch', 'success'); else toast('Ошибка: ' + (data.details || data.error), 'error', 4000);
 }
 
 function addOption() {
@@ -63,7 +63,7 @@ async function saveTemplate() {
 	if (options.length < 2) { alert('Нужно минимум 2 варианта'); return; }
 	const resp = await fetch('/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, options, durationSec }) });
 	const data = await resp.json();
-	if (data.ok) { loadTemplates(); alert('Шаблон сохранён'); } else { alert('Ошибка сохранения шаблона'); }
+	if (data.ok) { loadTemplates(); toast('Шаблон сохранён'); } else { toast('Ошибка сохранения шаблона', 'error', 4000); }
 }
 
 async function loadTemplates() {
