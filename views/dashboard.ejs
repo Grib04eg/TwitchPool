@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TwitchPool - Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script>
+    async function regenLink() {
+      const resp = await fetch('/dashboard/widget/regenerate', { method: 'POST' });
+      const data = await resp.json();
+      document.getElementById('widgetLink').value = data.widgetUrl;
+    }
+    async function saveOptions() {
+      const title = document.getElementById('title').value;
+      const durationSec = document.getElementById('duration').value;
+      const options = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value).filter(Boolean);
+      const resp = await fetch('/dashboard/options', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, durationSec, options }) });
+      const data = await resp.json();
+      if (data.pollId) {
+        window.currentPollId = data.pollId;
+        alert('Список сохранён');
+      } else {
+        alert('Ошибка: ' + (data.error || 'unknown'));
+      }
+    }
+    async function createPoll() {
+      if (!window.currentPollId) { alert('Сначала сохраните список вариантов'); return; }
+      const resp = await fetch('/dashboard/polls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pollId: window.currentPollId }) });
+      const data = await resp.json();
+      if (data.ok) alert('Опрос создан на Twitch'); else alert('Ошибка: ' + (data.details || data.error));
+    }
+    function addOption() {
+      const container = document.getElementById('options');
+      const input = document.createElement('input');
+      input.className = 'opt-input';
+      input.placeholder = 'Вариант';
+      container.appendChild(input);
+    }
+  </script>
+  <style>
+    body { font-family: Inter, system-ui, Arial; margin: 0; background: #0f0f12; color: #e9e9ee; }
+    header { padding:16px 24px; background:#18181b; display:flex; justify-content:space-between; align-items:center; }
+    .container { padding:24px; display:grid; gap:24px; grid-template-columns: 1fr; max-width:900px; margin:0 auto; }
+    .card { background:#18181b; padding:16px; border-radius:12px; }
+    label { display:block; margin:8px 0 4px; }
+    input[type=text], input[type=number] { width:100%; padding:10px; border-radius:8px; border:1px solid #2b2b2f; background:#121215; color:#e9e9ee; }
+    .row { display:grid; grid-template-columns: 1fr auto; gap:8px; align-items:center; }
+    .btn { display:inline-block; padding:10px 14px; border-radius:8px; background:#9146FF; color:white; text-decoration:none; border:0; cursor:pointer; }
+    .btn:hover { background:#7a3bee; }
+    .opt-input { display:block; width:100%; margin:6px 0; padding:10px; border-radius:8px; border:1px solid #2b2b2f; background:#121215; color:#e9e9ee; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>Привет, <strong><%= user.display_name %></strong></div>
+    <form method="post" action="/logout"><button class="btn">Выйти</button></form>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h3>Виджет</h3>
+      <div class="row">
+        <input id="widgetLink" type="text" readonly value="<%= widgetUrl %>" />
+        <button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('widgetLink').value)">Копировать</button>
+      </div>
+      <div style="margin-top:8px;">
+        <button class="btn" onclick="regenLink()">Перегенерировать ссылку</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Настройка опроса</h3>
+      <label>Заголовок</label>
+      <input id="title" type="text" placeholder="О чём спросим?" />
+      <label>Длительность (сек)</label>
+      <input id="duration" type="number" min="15" max="1800" value="60" />
+      <label>Варианты</label>
+      <div id="options"></div>
+      <div style="margin-top:8px; display:flex; gap:8px;">
+        <button class="btn" onclick="addOption()">Добавить вариант</button>
+        <button class="btn" onclick="saveOptions()">Сохранить список</button>
+        <button class="btn" onclick="createPoll()">Создать опрос на Twitch</button>
+      </div>
+    </div>
+
+    <% if (latestPoll) { %>
+      <div class="card">
+        <div>Последний опрос: <strong><%= latestPoll.title %></strong> (статус: <%= latestPoll.status %>)</div>
+      </div>
+    <% } %>
+  </div>
+
+</body>
+</html>
+
+

@@ -1,0 +1,5 @@
+/* basic shared styles */
+* { box-sizing: border-box; }
+body { font-family: Inter, system-ui, Arial; }
+
+
